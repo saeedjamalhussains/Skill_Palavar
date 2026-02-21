@@ -1,0 +1,18 @@
+Path: /openapi.json | Name: openapi | Methods: {'HEAD', 'GET'}
+Path: /docs | Name: swagger_ui_html | Methods: {'HEAD', 'GET'}
+Path: /docs/oauth2-redirect | Name: swagger_ui_redirect | Methods: {'HEAD', 'GET'}
+Path: /redoc | Name: redoc_html | Methods: {'HEAD', 'GET'}
+Path: /api/v1/auth/register | Name: register | Methods: {'POST'}
+Path: /api/v1/auth/login | Name: login | Methods: {'POST'}
+Path: /api/v1/auth/me | Name: get_me | Methods: {'GET'}
+Path: /api/v1/banking/accounts | Name: get_accounts | Methods: {'GET'}
+Path: /api/v1/banking/transfer | Name: transfer | Methods: {'POST'}
+Path: /api/v1/banking/approvals | Name: get_pending_approvals | Methods: {'GET'}
+Path: /api/v1/banking/approve/{approval_id} | Name: approve_transaction | Methods: {'POST'}
+Path: /api/v1/banking/transactions | Name: get_transaction_history | Methods: {'GET'}
+Path: /api/v1/admin/dashboard | Name: get_admin_dashboard | Methods: {'GET'}
+Path: /api/v1/admin/account/{account_id}/status | Name: update_account_status | Methods: {'POST'}
+Path: /api/v1/admin/audit/search | Name: search_audit_logs | Methods: {'GET'}
+Path: /api/v1/admin/customer-directory | Name: list_customer_accounts | Methods: {'GET'}
+Path: / | Name: read_root | Methods: {'GET'}
+Path: /health | Name: health_check | Methods: {'GET'}

@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZTNA Banking - Secure Portal</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <!-- Auth Section -->
+    <div id="auth-section">
+        <div id="login-view" class="glass-card">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <div class="logo" style="justify-content: center; margin-bottom: 0.5rem;">
+                    <div class="logo-icon"><i data-lucide="shield"></i></div>
+                    <span style="font-size: 1.5rem;">ZTNA<span>Bank</span></span>
+                </div>
+                <div
+                    style="display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(34, 197, 94, 0.1); color: #22c55e; padding: 0.25rem 0.75rem; border-radius: 2rem; font-size: 0.688rem; font-weight: 700; margin-bottom: 1rem; border: 1px solid rgba(34, 197, 94, 0.2);">
+                    <i data-lucide="lock" style="width: 12px; height: 12px;"></i> SECURE ACCESS GATEWAY 2026
+                </div>
+                <p style="color: var(--text-secondary); font-size: 0.875rem;">Enter your credentials to initiate ZTNA
+                    protocol</p>
+            </div>
+
+            <div class="input-group">
+                <label>Username</label>
+                <input type="text" id="login-username" placeholder="Enter your username">
+            </div>
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" id="login-password" placeholder="••••••••">
+            </div>
+            <button class="btn btn-primary" style="width: 100%; height: 3.5rem;" onclick="app.login()">
+                Sign In <i data-lucide="arrow-right"></i>
+            </button>
+            <p style="margin-top: 1.5rem; text-align: center; font-size: 0.813rem; color: var(--text-secondary);">
+                New here? <a href="#" onclick="app.toggleAuth('signup')"
+                    style="color: var(--primary); text-decoration: none; font-weight: 600;">Create an account</a>
+            </p>
+            <p id="auth-error" style="color: var(--danger); font-size: 0.813rem; margin-top: 1rem; text-align: center;">
+            </p>
+        </div>
+
+        <div id="mfa-view" class="glass-card" style="display: none; max-width: 450px;">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <div
+                    style="width: 64px; height: 64px; background: rgba(99, 102, 241, 0.1); color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+                    <i data-lucide="shield-check" style="width: 32px; height: 32px;"></i>
+                </div>
+                <h2 style="margin-bottom: 0.5rem;">Verify Identity</h2>
+                <p style="color: var(--text-secondary); font-size: 0.875rem;">A 6-digit security code has been generated
+                    for 2FA verification.</p>
+            </div>
+
+            <div class="input-group">
+                <label>6-Digit Security Code</label>
+                <input type="text" id="mfa-code" placeholder="000000" maxlength="6"
+                    style="text-align: center; font-size: 1.5rem; letter-spacing: 0.5rem; font-family: monospace; height: 4rem;">
+            </div>
+
+            <button class="btn btn-primary" style="width: 100%; height: 3.5rem;" onclick="app.verifyMFA()">
+                Complete ZTNA Verification <i data-lucide="shield"></i>
+            </button>
+
+            <button class="btn"
+                style="width: 100%; margin-top: 1rem; background: transparent; border: 1px solid var(--glass-border);"
+                onclick="app.toggleAuth('login')">
+                Back to Login
+            </button>
+
+            <p style="margin-top: 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.75rem;">
+                Don't have a code? Use demo code <b>123456</b>
+            </p>
+        </div>
+
+        <div id="signup-view" class="glass-card" style="display: none;">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <h2 style="margin-bottom: 0.5rem;">Create Account</h2>
+                <p style="color: var(--text-secondary); font-size: 0.875rem;">Your secure journey starts here</p>
+            </div>
+
+            <div class="input-group">
+                <label>Email Address</label>
+                <input type="email" id="signup-email" placeholder="email@example.com">
+            </div>
+            <div class="input-group">
+                <label>Username</label>
+                <input type="text" id="signup-username" placeholder="Choose a username">
+            </div>
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" id="signup-password" placeholder="Min 8 characters">
+            </div>
+            <div class="input-group">
+                <label>Special Registration Code (Optional)</label>
+                <input type="text" id="signup-special-code" placeholder="Enter code for staff roles">
+            </div>
+            <button class="btn btn-primary" style="width: 100%;" onclick="app.register()">
+                Get Started <i data-lucide="user-plus"></i>
+            </button>
+            <p style="margin-top: 1.5rem; text-align: center; font-size: 0.813rem; color: var(--text-secondary);">
+                Existing user? <a href="#" onclick="app.toggleAuth('login')"
+                    style="color: var(--primary); text-decoration: none; font-weight: 600;">Sign in instead</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="dashboard-layout" style="display: none;">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon"><i data-lucide="shield"></i></div>
+                    <span class="logo-text">ZTNA<span>Bank</span></span>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#" onclick="ui.showSection('overview')" class="nav-item active" id="nav-overview">
+                    <i data-lucide="layout-dashboard"></i> <span class="nav-text">Overview</span>
+                </a>
+                <a href="#" onclick="ui.showSection('profile')" class="nav-item" id="nav-profile">
+                    <i data-lucide="user"></i> <span class="nav-text">My Profile</span>
+                </a>
+                <a href="#" onclick="ui.showSection('transfer')" class="nav-item" id="nav-transfer">
+                    <i data-lucide="send"></i> <span class="nav-text">Transfers</span>
+                </a>
+                <a href="#" onclick="ui.showSection('admin')" class="nav-item admin-only" id="nav-admin"
+                    style="display: none;">
+                    <i data-lucide="shield-check"></i> <span class="nav-text">Security Command</span>
+                </a>
+                <a href="#" onclick="ui.showSection('threats')" class="nav-item admin-only" id="nav-threats"
+                    style="display: none;">
+                    <i data-lucide="brain-circuit"></i> <span class="nav-text">Threat Hub</span>
+                </a>
+
+                <a href="#" onclick="app.logout()" class="nav-item logout">
+                    <i data-lucide="log-out"></i> <span class="nav-text">Logout</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-bar">
+                <h1 id="section-title">Overview</h1>
+                <div class="top-bar-right">
+
+                    <div id="role-performance-badge" class="role-badge"
+                        style="display: items; background: rgba(99, 102, 241, 0.1); color: var(--primary); padding: 0.25rem 0.75rem; border-radius: 0.5rem; font-size: 0.688rem; font-weight: 700; border: 1px solid var(--glass-border);">
+                        IDENTITY ACCREDITED
+                    </div>
+                    <div class="user-pill"
+                        style="display: flex; align-items: center; gap: 0.75rem; background: var(--bg-card); padding: 0.5rem 1rem; border-radius: 2rem; border: 1px solid var(--glass-border);">
+                        <i data-lucide="user" style="font-size: 1rem; color: var(--primary);"></i>
+                        <span id="display-user" style="font-weight: 600; font-size: 0.875rem;">User</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Overview Section -->
+            <div id="section-overview" class="view-section active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span class="stat-label">Total Balance</span>
+                            <div class="stat-icon"><i data-lucide="wallet"></i></div>
+                        </div>
+                        <h2 id="balance-display" class="stat-value">₹0.00</h2>
+                        <span id="account-status-tag" class="status-tag active">Active</span>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <span class="stat-label">Account Number</span>
+                            <div class="stat-icon"><i data-lucide="credit-card"></i></div>
+                        </div>
+                        <h2 id="display-acc-id" style="font-size: 1.25rem; font-weight: 600; margin-top: 0.5rem;">
+                            ACC_XXXX</h2>
+                        <p id="display-email" style="color: var(--text-secondary); font-size: 0.75rem;">...</p>
+                    </div>
+                </div>
+
+                <div id="branch-stats-grid" class="stats-grid" style="display: none; margin-top: 1.5rem;">
+                    <div class="stat-card">
+                        <span class="stat-label">System Integrity</span>
+                        <h2 class="stat-value" style="color: var(--success);">SECURE</h2>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">Active Protocols</span>
+                        <h2 class="stat-value">ZTNA 3.0</h2>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="glass-card" style="max-width: none;">
+                        <h3 style="margin-bottom: 1.5rem;">Recent Transactions</h3>
+                        <div id="transactions-list-overview" class="list-container">
+                            <p class="empty-msg"
+                                style="color: var(--text-secondary); text-align: center; padding: 2rem;">Fetching
+                                transaction history...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Section -->
+            <div id="section-profile" class="view-section">
+                <div class="glass-card profile-hero"
+                    style="max-width: none; margin-bottom: 2rem; display: flex; align-items: center; gap: 3rem; padding: 3rem;">
+                    <div style="position: relative;">
+                        <div class="avatar-large"
+                            style="width: 120px; height: 120px; background: linear-gradient(135deg, var(--primary), var(--secondary)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 3rem; box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);">
+                            <i data-lucide="user" style="width: 60px; height: 60px;"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+                            <h2 id="profile-name" style="font-size: 2.25rem;">Full Name</h2>
+                            <span id="display-role-badge" class="role-badge"
+                                style="background: var(--primary); color: white; padding: 0.25rem 0.75rem; border-radius: 0.5rem; font-size: 0.75rem; font-weight: 700;">CUSTOMER</span>
+                        </div>
+                        <p id="profile-bio" style="color: var(--text-secondary); max-width: 500px;">Secure banking user
+                            in 2026. Dedicated to ZTNA security best practices.</p>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div id="account-limits-card" class="glass-card" style="max-width: none;">
+                        <h3>Account Limits</h3>
+                        <div style="margin-top: 1.5rem;">
+                            <div
+                                style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.875rem;">
+                                <span style="color: var(--text-secondary);">Daily Limit Utilized</span>
+                                <span style="font-weight: 600;">₹45,000 / ₹1,000,000</span>
+                            </div>
+                            <div
+                                style="height: 12px; background: rgba(255,255,255,0.05); border-radius: 6px; overflow: hidden;">
+                                <div style="width: 4.5%; height: 100%; background: var(--primary);"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transfer Section -->
+            <div id="section-transfer" class="view-section">
+                <div class="glass-card transfer-panel" style="max-width: 600px; margin: 0 auto; padding: 3rem;">
+                    <div style="text-align: center; margin-bottom: 2.5rem;">
+                        <i data-lucide="send"
+                            style="padding: 1.5rem; background: rgba(99, 102, 241, 0.1); color: var(--primary); border-radius: 50%; font-size: 2.5rem; margin-bottom: 1.5rem;"></i>
+                        <h2>Secure Transfer</h2>
+                        <p style="color: var(--text-secondary); font-size: 0.875rem;">Instant INR settlement with ZTNA
+                            verification</p>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Recipient Account</label>
+                        <div style="position: relative;">
+                            <input type="text" id="target-account" placeholder="ACC_XXXX" style="padding-left: 3rem;">
+                            <i data-lucide="hash"
+                                style="position: absolute; left: 1.25rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1rem;"></i>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Amount (₹)</label>
+                        <div style="position: relative;">
+                            <input type="number" id="transfer-amount" placeholder="0.00" style="padding-left: 3rem;">
+                            <span
+                                style="position: absolute; left: 1.25rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-weight: 700;">₹</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="app.transfer()"
+                        style="width: 100%; height: 3.5rem; font-size: 1.125rem;">
+                        Confirm & Send <i data-lucide="arrow-right"></i>
+                    </button>
+                    <p style="text-align: center; margin-top: 1.5rem; color: var(--text-muted); font-size: 0.75rem;">
+                        <i data-lucide="shield" style="font-size: 0.75rem; vertical-align: middle;"></i> Encrypted with
+                        military-grade ZTNA protocol
+                    </p>
+                </div>
+            </div>
+
+            <!-- Admin Section -->
+            <div id="section-admin" class="view-section">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-label">Total Users</span>
+                        <h2 id="admin-total-users" class="stat-value">---</h2>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">High Risk Alerts</span>
+                        <h2 id="admin-monitored" class="stat-value" style="color: var(--danger);">---</h2>
+                    </div>
+                </div>
+                <div class="glass-card" style="max-width: none; margin-top: 2rem;">
+                    <h3 style="margin-bottom: 2rem;">Customer Account Management</h3>
+                    <div id="admin-accounts-list" class="list-container">
+                        <p class="empty-msg">Fetching account directory...</p>
+                    </div>
+                </div>
+
+                <div class="glass-card" style="max-width: none; margin-top: 2rem;">
+                    <h3>Recent Security Audit Logs</h3>
+                    <div id="admin-logs-list" class="list-container" style="margin-top: 2rem;">
+                        <p class="empty-msg">No recent actions recorded.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Insider Threat Hub -->
+            <div id="section-threats" class="view-section">
+                <div class="glass-card"
+                    style="margin-bottom: 2rem; border-left: 4px solid var(--danger); background: rgba(239, 68, 68, 0.05);">
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                        <div
+                            style="width: 48px; height: 48px; background: rgba(239, 68, 68, 0.1); color: var(--danger); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                            <i data-lucide="brain-circuit"></i>
+                        </div>
+                        <div>
+                            <h3 style="margin: 0;">Inside Perspective UEBA</h3>
+                            <p style="color: var(--text-secondary); font-size: 0.813rem; margin: 0;">Micro-segmentation
+                                Status & Anomaly Feed</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-grid" id="threat-summary-grid" style="margin-bottom: 2rem;">
+                    <div class="stat-card">
+                        <span class="stat-label">Anomalous Actors</span>
+                        <h2 id="actor-anomalies" class="stat-value">---</h2>
+                    </div>
+                    <div class="stat-card" style="border-top: 3px solid var(--primary);">
+                        <span class="stat-label">Micro-segmentation Status</span>
+                        <h2 id="segmentation-status" class="stat-value"
+                            style="color: var(--primary); font-size: 1.25rem;">ACTIVE: ENFORCED</h2>
+                        <p style="font-size: 0.625rem; color: var(--text-muted); margin-top: 0.5rem;"><i
+                                data-lucide="shield"></i> 3/3 Segments Hardened</p>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">Real-time Risk Index</span>
+                        <h2 id="overall-risk-index" class="stat-value" style="color: var(--warning);">ELEVATED</h2>
+                    </div>
+                </div>
+
+                <div class="glass-card">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h3 style="margin: 0;">Behavioral Intelligence Feed</h3>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn" onclick="app.simulateFileExport()"
+                                style="padding: 0.5rem 1rem; font-size: 0.75rem; background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2);">
+                                <i data-lucide="download-cloud" style="width: 14px; height: 14px;"></i> Export Sensitive
+                                Data
+                            </button>
+                            <button class="btn" onclick="app.loadThreatIntelligence()"
+                                style="padding: 0.5rem 1rem; font-size: 0.75rem;">
+                                <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i> Analyze Patterns
+                            </button>
+                        </div>
+                    </div>
+                    <div id="threat-list" class="transaction-list">
+                        <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
+                            <i data-lucide="radar"
+                                style="width: 48px; height: 48px; margin-bottom: 1rem; opacity: 0.5;"></i>
+                            <p>Scanning for behavioral anomalies...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>
