@@ -78,18 +78,30 @@ class ThreatMonitor:
         return alerts_generated
 
     @staticmethod
-    def evaluate_insider_activity(db: Session, user: User, action: str):
+    def evaluate_insider_activity(db: Session, user: User, action: str, target_account_id: int = None):
         """
         Called after staff actions to detect insider threat patterns:
         - Frequent account status changes (>3 in 1 hour)
         - Excessive customer directory lookups (>20 in 10 min)
+        - Mass file exports (>3 in 5 min)
+        
+        target_account_id: the account being acted upon (for status changes).
+                           For lookups/exports, first customer account is used as sentinel.
         """
         if user.role in [UserRole.CUSTOMER]:
             return []  # Only monitor staff
 
         alerts_generated = []
-        account = user.accounts[0] if user.accounts else None
-        # For staff without accounts, we use user_id-based alerting via a sentinel account_id=0
+        
+        # Resolve alert_account_id: use target_account_id if given, else find first customer account as sentinel
+        if target_account_id:
+            alert_account_id = target_account_id
+        else:
+            sentinel = db.query(Account).first()
+            alert_account_id = sentinel.id if sentinel else None
+        
+        if not alert_account_id:
+            return []  # No accounts exist yet
 
         # A. Frequent Account Status Changes (privilege abuse)
         if action == "UPDATE_ACCOUNT_STATUS":
@@ -102,7 +114,7 @@ class ThreatMonitor:
 
             if status_change_count >= 3:
                 alert = ThreatMonitor._create_alert(
-                    db, account.id if account else 0,
+                    db, alert_account_id,
                     alert_type="INSIDER_THREAT",
                     severity="HIGH",
                     reason=f"Staff '{user.username}' made {status_change_count} account status changes in 1 hour (possible privilege abuse)"
@@ -120,7 +132,7 @@ class ThreatMonitor:
 
             if lookup_count >= 20:
                 alert = ThreatMonitor._create_alert(
-                    db, account.id if account else 0,
+                    db, alert_account_id,
                     alert_type="INSIDER_THREAT",
                     severity="CRITICAL",
                     reason=f"Staff '{user.username}' performed {lookup_count} data lookups in 10 min (possible data harvesting)"
@@ -138,7 +150,7 @@ class ThreatMonitor:
 
             if export_count >= 3:
                 alert = ThreatMonitor._create_alert(
-                    db, account.id if account else 0,
+                    db, alert_account_id,
                     alert_type="INSIDER_THREAT",
                     severity="CRITICAL",
                     reason=f"Staff '{user.username}' triggered {export_count} file exports in 5 min (data exfiltration risk)"

@@ -91,7 +91,7 @@ def update_account_status(
     
     # Insider threat evaluation — detect frequent status changes
     from app.core.threat_monitor import threat_monitor
-    threat_monitor.evaluate_insider_activity(db, user, "UPDATE_ACCOUNT_STATUS")
+    threat_monitor.evaluate_insider_activity(db, user, "UPDATE_ACCOUNT_STATUS", target_account_id=account.id)
     
     return {"message": f"Account {account.account_number} status updated to {account.status}"}
 
