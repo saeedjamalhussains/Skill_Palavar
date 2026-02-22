@@ -35,7 +35,16 @@ app.include_router(admin_router, prefix=settings.API_V1_STR)
 # Serve index.html at root
 @app.get("/")
 def read_root():
-    return FileResponse(os.path.join("frontend", "index.html"))
+    return FileResponse(os.path.join("frontend", "index.html"), headers={"Cache-Control": "no-store"})
+
+# Explicit no-cache routes for JS and CSS (prevents stale-cache bugs)
+@app.get("/script.js")
+def serve_script():
+    return FileResponse(os.path.join("frontend", "script.js"), media_type="application/javascript", headers={"Cache-Control": "no-store"})
+
+@app.get("/styles.css")
+def serve_styles():
+    return FileResponse(os.path.join("frontend", "styles.css"), media_type="text/css", headers={"Cache-Control": "no-store"})
 
 # Mount the entire frontend directory for static assets (styles, scripts, images)
 app.mount("/", StaticFiles(directory="frontend"), name="frontend")
