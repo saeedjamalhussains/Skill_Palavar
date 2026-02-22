@@ -1,11 +1,8 @@
 import requests
-import json
-import random
 
 BASE_URL = "http://localhost:8000/api/v1"
 
 def login(username, password, fingerprint):
-    # Enforce unique session identity
     res = requests.post(f"{BASE_URL}/auth/login", json={
         "username": username,
         "password": password,
@@ -20,64 +17,47 @@ def login(username, password, fingerprint):
             "fingerprint": fingerprint
         })
         return res.json()["access_token"]
-    if "access_token" not in data:
-        raise Exception(f"Login Failed: {data}")
     return data["access_token"]
 
-def check_threats(token, fingerprint):
-    res = requests.get(f"{BASE_URL}/admin/threats", headers={
-        "Authorization": f"Bearer {token}",
-        "X-Device-Fingerprint": fingerprint
+def get_dashboard(token):
+    res = requests.get(f"{BASE_URL}/admin/dashboard", headers={
+        "Authorization": f"Bearer {token}"
     })
-    data = res.json()
-    if not isinstance(data, list):
-        print(f"DEBUG: Non-list response: {data}")
-        return []
-    return data
-
-def generate_anomaly(token, to_acc, amount, fingerprint):
-    print(f"Generating 6 rapid transfers to {to_acc}...")
-    for _ in range(6):
-        requests.post(f"{BASE_URL}/banking/transfer", json={
-            "to_account_number": to_acc,
-            "amount": amount,
-            "idempotency_key": f"key_{random.randint(1000, 9999999)}"
-        }, headers={
-            "Authorization": f"Bearer {token}",
-            "X-Device-Fingerprint": fingerprint
-        })
+    return res.json()
 
 if __name__ == "__main__":
     try:
-        print("--- Initiating Tiered Anomaly Generation ---")
+        print("--- Verifying Hierarchical Scoping ---")
         
-        # Branch 1 Anomaly (customer_3)
-        c3_token = login("customer_3", "password123", "fp-cust3")
-        generate_anomaly(c3_token, "ACC_CUSTOMER_4", 1000, "fp-cust3")
+        # 1. Branch Head (BR-001) should only see their branch
+        print("\n[Testing Branch Head - BR-001]")
+        token_br1 = login("branch_1", "password123", "fp-br1")
+        dash_br1 = get_dashboard(token_br1)
+        print(f"Total Users Visible: {dash_br1['total_users']}")
+        # Expecting less than global count
         
-        # Branch 2 Anomaly (customer_1)
-        c1_token = login("customer_1", "password123", "fp-cust1")
-        generate_anomaly(c1_token, "ACC_CUSTOMER_4", 2000, "fp-cust1")
+        # 2. Regional Head (REG-NORTH) should see North branches (BR-001, BR-002)
+        print("\n[Testing Regional Head - NORTH]")
+        token_reg = login("regional_north", "password123", "fp-regn")
+        dash_reg = get_dashboard(token_reg)
+        print(f"Total Users Visible: {dash_reg['total_users']}")
+        # Expecting more than single branch but less than global
         
-        print("\n--- Verifying Scoped Visibility ---")
+        # 3. Super Admin should see everyone
+        print("\n[Testing Super Admin]")
+        token_admin = login("admin", "password123", "fp-admin")
+        dash_admin = get_dashboard(token_admin)
+        print(f"Total Users Visible: {dash_admin['total_users']}")
         
-        # 1. Branch 1 Head (Should see only Branch 1)
-        br1_token = login("branch_1", "password123", "fp-br1")
-        br1_threats = check_threats(br1_token, "fp-br1")
-        print(f"Branch 1 Head (BR-001) saw {len(br1_threats)} threats.")
-        for t in br1_threats: print(f"  - {t['message']} (User: {t['user']})")
+        print("\nVerification Results:")
+        print(f"BR1 Visibility: {dash_br1['total_users']}")
+        print(f"Regional Visibility: {dash_reg['total_users']}")
+        print(f"Global Visibility: {dash_admin['total_users']}")
         
-        # 2. Regional North Head (Should see BR-001 and BR-002)
-        reg_n_token = login("regional_north", "password123", "fp-regn")
-        reg_n_threats = check_threats(reg_n_token, "fp-regn")
-        print(f"Regional North Head saw {len(reg_n_threats)} threats.")
-        
-        # 3. Super Admin (Global View)
-        admin_token = login("admin", "password123", "fp-admin")
-        admin_threats = check_threats(admin_token, "fp-admin")
-        print(f"Super Admin saw {len(admin_threats)} total threats.")
-        
-        print("\nVerification Completed.")
-        
+        if dash_br1['total_users'] < dash_reg['total_users'] < dash_admin['total_users']:
+            print("\n✅ Hierarchical Scoping is WORKING correctly.")
+        else:
+            print("\n❌ Hierarchy Mismatch detected.")
+            
     except Exception as e:
         print(f"Verification Failed: {e}")

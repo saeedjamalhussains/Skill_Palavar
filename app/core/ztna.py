@@ -1,6 +1,6 @@
 from typing import Optional
 from app.core.config import settings
-from app.db.models import User, Device, UserRole
+from app.db.models import User, Device, UserRole, Account
 from datetime import datetime
 from sqlalchemy.orm import Session
 
@@ -11,6 +11,8 @@ class ZTNAActions:
     TRANSFER_INITIATE = "TRANSFER_INITIATE"
     UPDATE_ACCOUNT_STATUS = "UPDATE_ACCOUNT_STATUS"
     SEGMENT_ACCESS_DENIED = "SEGMENT_ACCESS_DENIED"
+    CONCURRENT_LOGIN_ATTEMPT = "CONCURRENT_LOGIN_ATTEMPT"
+    BRUTE_FORCE_DETECTED = "BRUTE_FORCE_DETECTED"
 
 class RiskEngine:
     @staticmethod
@@ -27,7 +29,7 @@ class RiskEngine:
         # 1. Device & Location Trust Check
         device = next((d for d in user.devices if d.fingerprint == device_fingerprint), None)
         if not device:
-            risk_score += 0.4
+            risk_score += 0.2
             reasons.append("New/Unknown Device")
         elif not device.is_trusted:
             risk_score += 0.2
@@ -45,35 +47,57 @@ class RiskEngine:
                 reasons.append("Account Under Monitoring")
                 
         # 3. UEBA: Transaction Frequency & Amount
-        if transaction_amount:
-            if transaction_amount > 500000:
-                risk_score += 0.3
-                reasons.append("High-Value Transaction")
+        if db:
+            from app.db.models import AuditLog
+            from datetime import timedelta
             
-            # Check for Rapid Successive Transactions (UEBA)
-            if db:
-                from app.db.models import AuditLog
-                from datetime import timedelta
-                recent_time = datetime.utcnow() - timedelta(minutes=5)
+            # A. Check for Concurrent/Rapid Successive Logins (Session Hijacking / Account Sharing)
+            recent_login_time = datetime.utcnow() - timedelta(seconds=10)
+            recent_logins = db.query(AuditLog).filter(
+                AuditLog.user_id == user.id,
+                AuditLog.action == "LOGIN_SUCCESS",
+                AuditLog.timestamp >= recent_login_time
+            ).count()
+            
+            if recent_logins >= 3:
+                risk_score += 0.4
+                reasons.append("Suspicious: Rapid Successive Login (Possible Concurrent Session)")
+
+            # B. Check for Brute Force Attempts
+            brute_force_time = datetime.utcnow() - timedelta(minutes=5)
+            failed_attempts = db.query(AuditLog).filter(
+                AuditLog.user_id == user.id,
+                AuditLog.action == ZTNAActions.LOGIN_FAILED,
+                AuditLog.timestamp >= brute_force_time
+            ).count()
+            
+            if failed_attempts >= 3:
+                risk_score += 0.5
+                reasons.append(f"Brute Force Detected: {failed_attempts} failed attempts")
+
+            if transaction_amount:
+                if transaction_amount > 500000:
+                    risk_score += 0.3
+                    reasons.append("High-Value Transaction")
+                
+                # Check for Rapid Successive Transactions (UEBA)
+                recent_tx_time = datetime.utcnow() - timedelta(minutes=5)
                 recent_count = db.query(AuditLog).filter(
                     AuditLog.user_id == user.id,
                     AuditLog.action == ZTNAActions.TRANSFER_INITIATE,
-                    AuditLog.timestamp >= recent_time
+                    AuditLog.timestamp >= recent_tx_time
                 ).count()
                 
                 if recent_count >= 3:
                     risk_score += 0.4
                     reasons.append("Abnormal Transaction Frequency")
 
-            # Check for Rapid Successive File Exports (UEBA)
-            if db:
-                from app.db.models import AuditLog
-                from datetime import timedelta
-                recent_time = datetime.utcnow() - timedelta(minutes=5)
+                # Check for Rapid Successive File Exports (UEBA)
+                recent_file_time = datetime.utcnow() - timedelta(minutes=5)
                 file_count = db.query(AuditLog).filter(
                     AuditLog.user_id == user.id,
                     AuditLog.action == ZTNAActions.FILE_EXPORT,
-                    AuditLog.timestamp >= recent_time
+                    AuditLog.timestamp >= recent_file_time
                 ).count()
                 
                 if file_count >= 5:
@@ -85,6 +109,22 @@ class RiskEngine:
         if 0 <= hour <= 5:
             risk_score += 0.1
             reasons.append("Unusual Access Hours")
+
+        # 5. UEBA: Daily Transaction Volume
+        if db:
+            from app.db.models import Transaction, TransactionStatus
+            today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+            daily_tx_count = db.query(Transaction).join(
+                Account, Transaction.from_account_id == Account.id
+            ).filter(
+                Account.user_id == user.id,
+                Transaction.timestamp >= today_start,
+                Transaction.status == TransactionStatus.COMPLETED
+            ).count()
+
+            if daily_tx_count >= settings.DAILY_TRANSACTION_COUNT_LIMIT:
+                risk_score += 0.15
+                reasons.append(f"High Daily Volume: {daily_tx_count} transactions today")
             
         return min(risk_score, 1.0), reasons
 

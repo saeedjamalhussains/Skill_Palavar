@@ -14,6 +14,12 @@ class UserCreate(UserBase):
 class UserResponse(UserBase):
     id: int
     is_active: bool
+    phone_number: Optional[str] = None
+    address: Optional[str] = None
+    pan_number: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    kyc_status: Optional[str] = None
+    bio: Optional[str] = None
 
     class Config:
         from_attributes = True

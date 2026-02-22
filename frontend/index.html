@@ -13,6 +13,7 @@
 </head>
 
 <body>
+    <div id="notification-container"></div>
     <!-- Auth Section -->
     <div id="auth-section">
         <div id="login-view" class="glass-card">
@@ -168,7 +169,7 @@
             <!-- Overview Section -->
             <div id="section-overview" class="view-section active">
                 <div class="stats-grid">
-                    <div class="stat-card">
+                    <div id="stat-card-balance" class="stat-card">
                         <div class="stat-header">
                             <span class="stat-label">Total Balance</span>
                             <div class="stat-icon"><i data-lucide="wallet"></i></div>
@@ -177,7 +178,7 @@
                         <span id="account-status-tag" class="status-tag active">Active</span>
                     </div>
 
-                    <div class="stat-card">
+                    <div id="stat-card-account" class="stat-card">
                         <div class="stat-header">
                             <span class="stat-label">Account Number</span>
                             <div class="stat-icon"><i data-lucide="credit-card"></i></div>
@@ -247,6 +248,38 @@
                             </div>
                         </div>
                     </div>
+
+                    <div id="kyc-info-card" class="glass-card" style="max-width: none;">
+                        <h3>KYC Information</h3>
+                        <div style="margin-top: 1.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                            <div>
+                                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">
+                                    Phone Number</div>
+                                <div id="display-phone" style="font-weight: 600;">--</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">
+                                    KYC
+                                    Status</div>
+                                <span id="display-kyc-status" class="status-tag active">--</span>
+                            </div>
+                            <div style="grid-column: span 2;">
+                                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">
+                                    Residential Address</div>
+                                <div id="display-address" style="font-weight: 600;">--</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">
+                                    PAN Number (GOV ID)</div>
+                                <div id="display-pan" style="font-weight: 600; font-family: monospace;">--</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">
+                                    Date of Birth</div>
+                                <div id="display-dob" style="font-weight: 600;">--</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -301,9 +334,31 @@
                     </div>
                 </div>
                 <div class="glass-card" style="max-width: none; margin-top: 2rem;">
+                    <h3 style="margin-bottom: 2rem;">Recent Scoped Transactions</h3>
+                    <div id="admin-transactions-list" class="list-container">
+                        <p class="empty-msg">No transactions in scope.</p>
+                    </div>
+                </div>
+
+                <div class="glass-card" style="max-width: none; margin-top: 2rem;">
                     <h3 style="margin-bottom: 2rem;">Customer Account Management</h3>
                     <div id="admin-accounts-list" class="list-container">
                         <p class="empty-msg">Fetching account directory...</p>
+                    </div>
+                </div>
+
+                <div id="hierarchical-intelligence-section" class="glass-card"
+                    style="max-width: none; margin-bottom: 2rem; display: none;">
+                    <div
+                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+                        <h3 style="margin: 0;">Banking Hierarchy Intelligence</h3>
+                        <span id="hierarchy-scope-label"
+                            style="font-size: 0.688rem; font-weight: 700; color: var(--primary); background: rgba(99, 102, 241, 0.1); padding: 0.25rem 0.75rem; border-radius: 0.5rem; text-transform: uppercase;">GLOBAL
+                            VIEW</span>
+                    </div>
+                    <div id="hierarchy-stats-grid" class="stats-grid"
+                        style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
+                        <!-- Grouped stats will be injected here -->
                     </div>
                 </div>
 
@@ -311,6 +366,49 @@
                     <h3>Recent Security Audit Logs</h3>
                     <div id="admin-logs-list" class="list-container" style="margin-top: 2rem;">
                         <p class="empty-msg">No recent actions recorded.</p>
+                    </div>
+                </div>
+
+                <!-- Account Alerts (Automated Threat Detection) -->
+                <div class="glass-card"
+                    style="max-width: none; margin-top: 2rem; border-left: 4px solid var(--warning);">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div
+                                style="width: 40px; height: 40px; background: rgba(245, 158, 11, 0.1); color: var(--warning); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                                <i data-lucide="bell-ring"></i>
+                            </div>
+                            <div>
+                                <h3 style="margin: 0;">Account Alerts</h3>
+                                <p style="color: var(--text-secondary); font-size: 0.75rem; margin: 0;">Auto-generated
+                                    by Behavioral Anomaly Engine</p>
+                            </div>
+                        </div>
+                        <span id="alert-count-badge"
+                            style="background: var(--danger); color: white; padding: 0.25rem 0.75rem; border-radius: 2rem; font-size: 0.75rem; font-weight: 700;">0</span>
+                    </div>
+                    <div id="account-alerts-list" class="list-container">
+                        <p class="empty-msg">No active alerts. System is nominal.</p>
+                    </div>
+                </div>
+
+                <!-- Defreeze Requests (Controlled Defreezing Workflow) -->
+                <div class="glass-card admin-only" id="defreeze-requests-panel"
+                    style="max-width: none; margin-top: 2rem; border-left: 4px solid var(--primary); display: none;">
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                        <div
+                            style="width: 40px; height: 40px; background: rgba(99, 102, 241, 0.1); color: var(--primary); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                            <i data-lucide="unlock"></i>
+                        </div>
+                        <div>
+                            <h3 style="margin: 0;">Defreeze Requests</h3>
+                            <p style="color: var(--text-secondary); font-size: 0.75rem; margin: 0;">Controlled account
+                                restoration — requires verification</p>
+                        </div>
+                    </div>
+                    <div id="defreeze-requests-list" class="list-container">
+                        <p class="empty-msg">No pending defreeze requests.</p>
                     </div>
                 </div>
             </div>
@@ -340,7 +438,8 @@
                     <div class="stat-card" style="border-top: 3px solid var(--primary);">
                         <span class="stat-label">Micro-segmentation Status</span>
                         <h2 id="segmentation-status" class="stat-value"
-                            style="color: var(--primary); font-size: 1.25rem;">ACTIVE: ENFORCED</h2>
+                            style="color: var(--primary); font-size: 1.25rem;">
+                            ACTIVE: ENFORCED</h2>
                         <p style="font-size: 0.625rem; color: var(--text-muted); margin-top: 0.5rem;"><i
                                 data-lucide="shield"></i> 3/3 Segments Hardened</p>
                     </div>

@@ -1,15 +1,17 @@
 from sqlalchemy.orm import Session
 from app.db.session import SessionLocal, init_db
-from app.db.models import User, Account, UserRole
+from app.db.models import User, Account, UserRole, Transaction, TransactionStatus
 from app.core.security import get_password_hash
+from datetime import datetime
 
 def seed_data():
     init_db()
     db = SessionLocal()
     
     # Check if data already exists
-    if db.query(User).first():
-        print("Data already seeded.")
+    if db.query(User).count() > 40:
+        print("Data already seeded (40+ users found).")
+        db.close()
         return
 
     # programmatically generate 50 users with hierarchy
@@ -23,7 +25,7 @@ def seed_data():
         ("branch_3", "br3@vbank.com", UserRole.BRANCH_HEAD, "BR-003", "REG-SOUTH"),
     ]
 
-    # Add 10 Tellers and 30+ Customers distributed across branches
+    # Add 10 Tellers and 32 Customers distributed across branches
     for i in range(1, 11):
         branch = f"BR-00{(i % 3) + 1}"
         region = "REG-NORTH" if branch in ["BR-001", "BR-002"] else "REG-SOUTH"
@@ -34,20 +36,29 @@ def seed_data():
         region = "REG-NORTH" if branch in ["BR-001", "BR-002"] else "REG-SOUTH"
         user_data.append((f"customer_{i}", f"cust{i}@vbank.com", UserRole.CUSTOMER, branch, region))
 
-    for username, email, role, b_id, r_id in user_data:
+    print(f"Starting seed with {len(user_data)} potential users...")
+    
+    for index, (username, email, role, b_id, r_id) in enumerate(user_data):
         user = db.query(User).filter(User.username == username).first()
         if not user:
+            is_customer = role == UserRole.CUSTOMER
             user = User(
                 username=username,
                 email=email,
                 hashed_password=get_password_hash("password123"),
                 role=role,
                 branch_id=b_id,
-                region_id=r_id
+                region_id=r_id,
+                phone_number=f"+91 98765 {20000 + index}" if is_customer else None,
+                address=f"{100 + index}, Banking Enclave, New Delhi" if is_customer else None,
+                pan_number=f"ABCDE{2000 + index}F" if is_customer else None,
+                date_of_birth="1990-01-01" if is_customer else None,
+                kyc_status="VERIFIED" if is_customer else "NOT_APPLICABLE"
             )
             db.add(user)
             db.commit()
             db.refresh(user)
+            print(f"  [+] Created User: {username}")
         
         # Add account ONLY for customers
         if role == UserRole.CUSTOMER:
@@ -61,10 +72,29 @@ def seed_data():
                 )
                 db.add(account)
                 db.commit()
+                print(f"      [A] Created Account for {username}")
 
-    print(f"Generated {len(user_data)} seeded identities successfully.")
+                # Add transactions for some customers to show history
+                if index > 20: 
+                    # Use a different account for target
+                    target_acc = db.query(Account).filter(Account.id != account.id).first()
+                    if target_acc:
+                        for j in range(2):
+                            tx = Transaction(
+                                from_account_id=account.id,
+                                to_account_id=target_acc.id,
+                                amount=1000.0 * (j + 1),
+                                status=TransactionStatus.COMPLETED,
+                                risk_score=0.1,
+                                idempotency_key=f"seed_tx_{username}_{j}_{datetime.utcnow().timestamp()}"
+                            )
+                            db.add(tx)
+                db.commit()
 
-    print("Comprehensive seed data created successfully.")
+    print("\n--- SEED COMPLETE ---")
+    print(f"Total Users: {db.query(User).count()}")
+    print(f"Total Accounts: {db.query(Account).count()}")
+    print(f"Total Transactions: {db.query(Transaction).count()}")
     db.close()
 
 if __name__ == "__main__":

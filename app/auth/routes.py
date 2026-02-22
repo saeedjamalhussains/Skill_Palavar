@@ -65,14 +65,25 @@ from datetime import timedelta
 def login(login_req: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == login_req.username).first()
     if not user or not verify_password(login_req.password, user.hashed_password):
+        if user:
+            audit_logger.log_action(db, user.id, "LOGIN_FAILED", "AUTH", {"fingerprint": login_req.fingerprint, "reason": "invalid_credentials"})
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     
     # ZTNA Check
     risk_score, reasons = ztna_risk_engine.calculate_risk(user, login_req.fingerprint, "127.0.0.1", db=db)
+    
+    # Log detected behavioral anomalies for administrative oversight
+    if any("Rapid Successive Login" in r for r in reasons):
+        audit_logger.log_action(db, user.id, "CONCURRENT_LOGIN_ATTEMPT", "AUTH", {"fingerprint": login_req.fingerprint, "risk_score": risk_score})
+    
+    if any("Brute Force Detected" in r for r in reasons):
+        audit_logger.log_action(db, user.id, "BRUTE_FORCE_DETECTED", "AUTH", {"reasons": reasons})
+
     action = ztna_risk_engine.get_action_for_risk(risk_score)
     
     if action == "DENY":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied by ZTNA policy (High Risk)")
+        audit_logger.log_action(db, user.id, "LOGIN_DENIED", "AUTH", {"risk_score": risk_score, "reasons": reasons})
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Access denied by ZTNA policy: {', '.join(reasons)}")
     
     # Industry Standard: Generate and save dynamic OTP
     otp = str(random.randint(100000, 999999))
@@ -126,14 +137,6 @@ def mfa_verify(mfa_req: MFAVerify, db: Session = Depends(get_db)):
     
     return {"access_token": access_token, "token_type": "bearer"}
 
-@router.get("/me", response_model=dict)
+@router.get("/me", response_model=UserResponse)
 def get_me(user: User = Depends(get_current_user)):
-    return {
-        "id": user.id,
-        "username": user.username,
-        "email": user.email,
-        "role": user.role,
-        "account": {
-            "account_number": user.accounts[0].account_number if user.accounts else None
-        }
-    }
+    return user
