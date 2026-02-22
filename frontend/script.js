@@ -658,19 +658,26 @@ const app = {
         if (window.lucide) lucide.createIcons();
     },
 
-    async performTransfer() {
+    async transfer() {
+        const toAccount = document.getElementById('target-account').value.trim();
+        const amount = parseFloat(document.getElementById('transfer-amount').value);
+
+        if (!toAccount) { this.showNotification('Please enter a recipient account number', 'error'); return; }
+        if (!amount || amount <= 0) { this.showNotification('Please enter a valid amount', 'error'); return; }
+
         const payload = {
-            to_account_number: document.getElementById('transfer-to').value,
-            amount: parseFloat(document.getElementById('transfer-amount').value),
+            to_account_number: toAccount,
+            amount: amount,
             idempotency_key: 'tx_' + Date.now()
         };
         try {
-            await ApiService.request('/banking/transfer', { method: 'POST', body: JSON.stringify(payload) });
-            alert('Transfer Successful');
-            this.showDashboard();
-            ui.showSection('overview');
+            const result = await ApiService.request('/banking/transfer', { method: 'POST', body: JSON.stringify(payload) });
+            this.showNotification(`Transfer of \u20B9${amount.toLocaleString('en-IN')} to ${toAccount} ${result.status === 'completed' ? 'completed' : 'submitted'} successfully!`, 'success');
+            document.getElementById('target-account').value = '';
+            document.getElementById('transfer-amount').value = '';
+            this.loadAccountingData();
         } catch (err) {
-            alert(err.message);
+            this.showNotification(err.message || 'Transfer failed', 'error');
         }
     },
 

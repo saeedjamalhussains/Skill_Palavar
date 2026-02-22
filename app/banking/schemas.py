@@ -17,6 +17,7 @@ class TransactionResponse(BaseModel):
     amount: float
     status: TransactionStatus
     timestamp: datetime
+    is_debit: Optional[bool] = None
 
     class Config:
         from_attributes = True
